@@ -2,12 +2,17 @@
 
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
+import { useRouter } from "next/navigation"
 import { Button } from "./Button"
 
+type Mode = "login" | "signup"
+
 export function LoginForm() {
+  const router = useRouter()
+  const [mode, setMode] = useState<Mode>("login")
   const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
-  const [sent, setSent] = useState(false)
   const [error, setError] = useState("")
 
   async function handleSubmit(e: React.FormEvent) {
@@ -15,26 +20,33 @@ export function LoginForm() {
     setLoading(true)
     setError("")
     const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: `${location.origin}/auth/callback` },
-    })
-    setLoading(false)
-    if (error) {
-      setError(error.message)
-    } else {
-      setSent(true)
-    }
-  }
 
-  if (sent) {
-    return (
-      <div className="text-center">
-        <p className="text-4xl mb-3">📧</p>
-        <h2 className="text-lg font-semibold text-gray-800 mb-2">メールを確認してください</h2>
-        <p className="text-sm text-gray-500">{email} にログインリンクを送りました</p>
-      </div>
-    )
+    if (mode === "signup") {
+      const { error } = await supabase.auth.signUp({ email, password })
+      if (error) {
+        setError(error.message)
+        setLoading(false)
+        return
+      }
+      // サインアップ後そのままログイン
+      const { error: loginError } = await supabase.auth.signInWithPassword({ email, password })
+      if (loginError) {
+        setError("登録完了。ログインしてください。")
+        setMode("login")
+        setLoading(false)
+        return
+      }
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        setError("メールアドレスまたはパスワードが違います")
+        setLoading(false)
+        return
+      }
+    }
+
+    router.push("/dashboard")
+    router.refresh()
   }
 
   return (
@@ -50,11 +62,29 @@ export function LoginForm() {
           className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
         />
       </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
+        <input
+          type="password"
+          required
+          minLength={6}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="6文字以上"
+          className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+        />
+      </div>
       {error && <p className="text-xs text-red-500">{error}</p>}
       <Button type="submit" loading={loading} className="w-full py-3">
-        ログインリンクを送る
+        {mode === "login" ? "ログイン" : "新規登録"}
       </Button>
-      <p className="text-center text-xs text-gray-400">パスワード不要。メールのリンクをクリックするだけ。</p>
+      <button
+        type="button"
+        onClick={() => { setMode(mode === "login" ? "signup" : "login"); setError("") }}
+        className="w-full text-center text-xs text-gray-400 hover:text-emerald-600 transition-colors"
+      >
+        {mode === "login" ? "アカウントを作成する →" : "ログインはこちら →"}
+      </button>
     </form>
   )
 }
