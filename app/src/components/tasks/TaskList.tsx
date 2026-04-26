@@ -64,6 +64,7 @@ export function TaskList({ initialTasks }: { initialTasks: TaxTask[] }) {
 }
 
 function TaskCard({ task, onToggle }: { task: TaxTask; onToggle: (t: TaxTask) => void }) {
+  const steps = task.action_steps ?? []
   return (
     <Card className={`transition-opacity ${task.is_completed ? "opacity-60" : ""}`}>
       <div className="flex items-start gap-3">
@@ -82,24 +83,40 @@ function TaskCard({ task, onToggle }: { task: TaxTask; onToggle: (t: TaxTask) =>
           )}
         </button>
         <div className="flex-1 min-w-0">
-          <p className={`text-sm font-semibold ${task.is_completed ? "line-through text-gray-400" : "text-gray-800"}`}>
-            {task.title}
-          </p>
+          <div className="flex items-start justify-between gap-2">
+            <p className={`text-sm font-semibold ${task.is_completed ? "line-through text-gray-400" : "text-gray-800"}`}>
+              {task.title}
+            </p>
+            <p className="flex-shrink-0 text-sm font-bold text-emerald-600">
+              ¥{fmt(task.estimated_saving)}
+            </p>
+          </div>
           <p className="text-xs text-gray-500 mt-1 leading-relaxed">{task.description}</p>
+
+          {!task.is_completed && steps.length > 0 && (
+            <ol className="mt-3 space-y-1.5">
+              {steps.map((step, i) => (
+                <li key={i} className="flex items-start gap-2 text-xs text-gray-600">
+                  <span className="flex-shrink-0 w-4 h-4 rounded-full bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center text-[10px]">
+                    {i + 1}
+                  </span>
+                  <span className="leading-relaxed">{step}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+
           {task.affiliate_url && !task.is_completed && (
             <a
               href={task.affiliate_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-2 inline-block text-xs text-emerald-600 hover:underline"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-emerald-600 hover:underline"
             >
-              今すぐ申し込む →
+              {task.affiliate_label ?? "詳細を確認する →"}
             </a>
           )}
         </div>
-        <p className="flex-shrink-0 text-sm font-bold text-emerald-600">
-          ¥{fmt(task.estimated_saving)}
-        </p>
       </div>
     </Card>
   )

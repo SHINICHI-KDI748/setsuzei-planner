@@ -19,11 +19,13 @@ export interface TaxTask {
   task_type: string
   title: string
   description: string
+  action_steps: string[]
   estimated_saving: number
   priority: number
   is_completed: boolean
   completed_at: string | null
   affiliate_url: string | null
+  affiliate_label: string | null
   created_at: string
 }
 
