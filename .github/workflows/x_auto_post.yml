@@ -1,0 +1,29 @@
+name: X Auto Post
+
+on:
+  schedule:
+    - cron: "0 22 * * *"   # 日本時間 朝7時
+    - cron: "0 12 * * *"   # 日本時間 夜21時
+  workflow_dispatch:        # 手動実行も可能
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install tsx
+        run: npm install -g tsx
+
+      - name: Post to X
+        env:
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.APP_URL }}
+        run: tsx scripts/generate_x_post.ts --post
