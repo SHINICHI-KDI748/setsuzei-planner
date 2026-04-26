@@ -2,10 +2,11 @@
 /**
  * X投稿テキスト自動生成スクリプト
  * 使用: npx tsx scripts/generate_x_post.ts [--post]
- * --post フラグを付けると実際にAPIへ投稿する
  */
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://your-app.vercel.app"
+import * as crypto from "crypto"
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://shinichi-setsuzei.vercel.app"
 
 const THEMES = [
   {
@@ -36,30 +37,22 @@ const THEMES = [
 ]
 
 function pickTheme(date: Date) {
-  const idx = date.getDate() % THEMES.length
-  return THEMES[idx]
+  return THEMES[date.getDate() % THEMES.length]
 }
 
-async function postToX(text: string) {
-  const {
-    X_API_KEY,
-    X_API_SECRET,
-    X_ACCESS_TOKEN,
-    X_ACCESS_SECRET,
-  } = process.env
+async function postToX(text: string): Promise<void> {
+  const { X_API_KEY, X_API_SECRET, X_ACCESS_TOKEN, X_ACCESS_SECRET } = process.env
 
   if (!X_API_KEY || !X_API_SECRET || !X_ACCESS_TOKEN || !X_ACCESS_SECRET) {
     console.error("X API の環境変数が設定されていません")
     process.exit(1)
   }
 
-  // Node.js crypto で OAuth 1.0a 署名
-  const crypto = await import("crypto")
   const timestamp = Math.floor(Date.now() / 1000).toString()
   const nonce = crypto.randomBytes(16).toString("hex")
   const endpoint = "https://api.twitter.com/2/tweets"
 
-  const oauthParams = {
+  const oauthParams: Record<string, string> = {
     oauth_consumer_key: X_API_KEY,
     oauth_nonce: nonce,
     oauth_signature_method: "HMAC-SHA1",
@@ -80,10 +73,7 @@ async function postToX(text: string) {
   ].join("&")
 
   const signingKey = `${encodeURIComponent(X_API_SECRET)}&${encodeURIComponent(X_ACCESS_SECRET)}`
-  const signature = crypto
-    .createHmac("sha1", signingKey)
-    .update(baseString)
-    .digest("base64")
+  const signature = crypto.createHmac("sha1", signingKey).update(baseString).digest("base64")
 
   const authHeader =
     "OAuth " +
@@ -93,10 +83,7 @@ async function postToX(text: string) {
 
   const res = await fetch(endpoint, {
     method: "POST",
-    headers: {
-      Authorization: authHeader,
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: authHeader, "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
   })
 
@@ -109,14 +96,18 @@ async function postToX(text: string) {
   }
 }
 
-const shouldPost = process.argv.includes("--post")
-const theme = pickTheme(new Date())
-const text = theme.generate()
+async function main() {
+  const shouldPost = process.argv.includes("--post")
+  const theme = pickTheme(new Date())
+  const text = theme.generate()
 
-console.log(`[テーマ: ${theme.tag}]\n`)
-console.log(text)
-console.log(`\n文字数: ${text.length}`)
+  console.log(`[テーマ: ${theme.tag}]\n`)
+  console.log(text)
+  console.log(`\n文字数: ${text.length}`)
 
-if (shouldPost) {
-  await postToX(text)
+  if (shouldPost) {
+    await postToX(text)
+  }
 }
+
+main().catch((e) => { console.error(e); process.exit(1) })
