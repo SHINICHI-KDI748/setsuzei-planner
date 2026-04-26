@@ -23,8 +23,8 @@ const TASK_TEMPLATES: TaskTemplate[] = [
       "掛金を設定して積立開始（会社員の上限は月2.3万円）",
     ],
     priority: 1,
-    affiliate_url: "https://www.rakuten-sec.co.jp/ideco/",
-    affiliate_label: "楽天証券でiDeCoを始める →",
+    affiliate_url: "https://www.ideco-koushiki.jp/join/",
+    affiliate_label: "iDeCo公式サイトで加入手続きを確認 →",
     isApplicable: (i) => i.employment_type === "employee" && i.annual_income >= 3000000,
     calcSaving: (i) => {
       const monthlyMax = 23000
